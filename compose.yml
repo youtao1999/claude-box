@@ -1,0 +1,35 @@
+# Claude Code for the flake pipeline. Folder paths are in .env.
+#   docker compose build
+#   docker compose run --rm claude          (Claude; log in the first time)
+#   docker compose run --rm claude bash     (a shell in the same container setup)
+# Never add here: /var/run/docker.sock, a whole drive, the home folder, ~/.ssh.
+services:
+  claude:
+    build:
+      context: .
+      additional_contexts:
+        repo: ${REPO_DIR}
+        klayoutclaw: ${KLAYOUTCLAW_DIR}
+    image: flake-claude
+    stdin_open: true
+    tty: true
+    cap_add: [NET_ADMIN, NET_RAW]   # for init-firewall.sh only; Claude runs as the non-root user dev
+    environment:
+      FLAKE_PICTURES: /data/raw
+      FLAKE_RAW_TOP: /data/raw
+      FLAKE_RESULTS: /data/derived
+      FLAKE_LINK_MAP: /data/raw=${RAW_DIR};/data/derived=${DERIVED_DIR}
+      GIT_AUTHOR_NAME: ${GIT_NAME}
+      GIT_AUTHOR_EMAIL: ${GIT_EMAIL}
+      GIT_COMMITTER_NAME: ${GIT_NAME}
+      GIT_COMMITTER_EMAIL: ${GIT_EMAIL}
+    volumes:
+      - ${REPO_DIR}:/workspace                 # code Claude edits
+      - ${RAW_DIR}:/data/raw:ro                # pictures: read-only
+      - ${DERIVED_DIR}:/data/derived           # detection results, tray calibrations
+      - ${SCRATCH_DIR}:/data/scratch           # temporary work
+      - ${KLAYOUT_WORK_DIR}:/data/klayout      # KLayout / KlayoutKlaw files
+      - claude_cfg:/home/dev/.claude           # Claude login and settings
+
+volumes:
+  claude_cfg:

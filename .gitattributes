@@ -1,0 +1,2 @@
+# the scripts run inside Linux: keep LF even on a Windows checkout with core.autocrlf
+* text=auto eol=lf
