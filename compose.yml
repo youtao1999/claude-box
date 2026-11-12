@@ -10,7 +10,7 @@ services:
       context: .
       additional_contexts:
         repo: ${REPO_DIR}
-        klayoutclaw: ${KLAYOUTCLAW_DIR}
+        klayoutclaw: ${REPO_DIR}/KlayoutClaw    # submodule (youtao1999/KlayoutClaw, branch lab)
     image: flake-claude
     container_name: flake-claude
     hostname: flake-claude
@@ -21,6 +21,8 @@ services:
       FLAKE_PICTURES: /data/raw
       FLAKE_RAW_TOP: /data/raw
       FLAKE_RESULTS: /data/derived
+      FLAKE_DEVICES: /data/derived/devices    # device folders: visible on the PC, outside the repo
+      PYTHON_PATH: /usr/bin/python3            # KlayoutKlaw auto_route / evaluate_design workers (no conda)
       # workbook links as the PC sees these folders, so they open in Excel; the *_LINK variables
       # are needed only when the *_DIR paths are not the PC's own (Docker inside WSL: /mnt/d/...)
       FLAKE_LINK_MAP: /data/raw=${RAW_LINK:-${RAW_DIR}};/data/derived=${DERIVED_LINK:-${DERIVED_DIR}};/workspace=${REPO_LINK:-${REPO_DIR}}
