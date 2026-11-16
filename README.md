@@ -16,6 +16,10 @@ The container sees only these folders:
 - The only push allowed is `git push no-mistakes <branch>` (through the [no-mistakes](https://github.com/kunchenguid/no-mistakes)
   gate). A root-owned hook (`push-guard.sh`) blocks any other `git push` from Claude.
 - KLayout with KlayoutKlaw runs inside the container on a virtual screen (MCP server `klayoutclaw`).
+  Its recipes and skills are in `/workspace/KlayoutClaw`; its workers run with the system
+  `python3` (`PYTHON_PATH`), which has the packages of both repos' `requirements.txt`.
+- Device folders (stack plans to EBL write files) are in `/data/derived/devices` (`FLAKE_DEVICES`),
+  so the operator can add photos and open `writes.gds` in KLayout on the PC.
 - Tools from flake_catalog's CLAUDE.md are installed: `gh`, `gh-axi`, `chrome-devtools-axi`
   (with Chrome), `no-mistakes`, `gnhf`. The `caveman` and `ponytail` skills come preinstalled.
 
@@ -26,15 +30,17 @@ daemon can keep watching PRs and CI between sessions. You open Claude in it with
 
 1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) (with WSL 2) and start it.
    No Windows admin? See [Docker inside WSL](#docker-inside-wsl-no-docker-desktop) below.
-2. Clone the three repos side by side:
+2. Clone the two repos side by side. flake_catalog brings KlayoutClaw (the fork
+   `youtao1999/KlayoutClaw`, branch `lab`) as a submodule in `flake_catalog/KlayoutClaw`:
    ```
-   git clone https://github.com/youtao1999/flake_catalog.git
-   git clone https://github.com/caidish/KlayoutClaw.git
+   git clone --recurse-submodules https://github.com/youtao1999/flake_catalog.git
    git clone https://github.com/youtao1999/claude-box.git
    ```
-   You can skip flake_catalog if the PC already has a checkout.
+   If the PC already has a flake_catalog checkout, run `git pull` and then
+   `git submodule update --init` in it instead. A separate KlayoutClaw clone is no longer used.
 3. In `claude-box`, copy `.env.example` to `.env` and set this PC's folders.
-   Create the scratch and klayout folders if they don't exist.
+   Create the scratch and klayout folders if they don't exist. An older `.env` may still set
+   `KLAYOUTCLAW_DIR`; it is ignored now (the build uses `REPO_DIR/KlayoutClaw`) and can be deleted.
 4. Build the image (10–15 minutes the first time) and start the container:
    ```
    cd claude-box
@@ -58,6 +64,8 @@ docker exec -it flake-claude bash        # a shell
 If the container isn't running (after a reboot it restarts with Docker), `docker compose up -d`
 in this folder starts it. After changing the Dockerfile or the scripts:
 `docker compose build && docker compose up -d` (this replaces the container; the volumes stay).
+After `git pull` in flake_catalog, also run `git submodule update --init`; rebuild when
+KlayoutClaw's `plugin/`, `tools/` or `requirements.txt` changed (they are copied in at build time).
 
 Claude and the capture app both write `flakes.xlsx`. Don't run them at the same time.
 

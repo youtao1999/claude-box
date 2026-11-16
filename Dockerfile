@@ -44,9 +44,12 @@ RUN curl -fsSL -o /tmp/klayout.deb \
     && apt-get update && apt-get install -y --no-install-recommends /tmp/klayout.deb \
     && rm /tmp/klayout.deb && rm -rf /var/lib/apt/lists/*
 
-# pipeline packages (repo requirements.txt), shared by the scripts and KLayout's Python
+# pipeline packages (repo requirements.txt) and KlayoutClaw's (opencv, shapely, scikit-image, ...),
+# shared by the scripts and KLayout's Python
 COPY --from=repo requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir --break-system-packages -r /tmp/requirements.txt && rm /tmp/requirements.txt
+COPY --from=klayoutclaw requirements.txt /tmp/klayoutclaw-requirements.txt
+RUN pip install --no-cache-dir --break-system-packages -r /tmp/requirements.txt -r /tmp/klayoutclaw-requirements.txt \
+    && rm /tmp/requirements.txt /tmp/klayoutclaw-requirements.txt
 
 # user dev (uid 1000; ubuntu:24.04 ships a user "ubuntu" with that uid)
 RUN userdel -r ubuntu 2>/dev/null || true; useradd -m -u 1000 -s /bin/bash dev
@@ -54,6 +57,7 @@ RUN userdel -r ubuntu 2>/dev/null || true; useradd -m -u 1000 -s /bin/bash dev
 # git: the repo is a Windows checkout (CRLF working tree, other owner); GitHub logins come from gh,
 # set here rather than in ~/.gitconfig so they survive rebuilds
 RUN git config --system safe.directory /workspace \
+    && git config --system --add safe.directory /workspace/KlayoutClaw \
     && git config --system core.autocrlf true \
     && git config --system core.filemode false \
     && git config --system credential.https://github.com.helper "" \
@@ -71,7 +75,8 @@ RUN chmod 755 /usr/local/bin/init-firewall.sh /usr/local/bin/entrypoint.sh /usr/
 COPY managed-settings.json managed-mcp.json /etc/claude-code/
 RUN chmod 644 /etc/claude-code/*.json
 
-# KlayoutKlaw, installed with its own installer into /home/dev/.klayout/pymacros
+# KlayoutKlaw (flake_catalog's KlayoutClaw submodule), installed with its own installer into
+# /home/dev/.klayout/pymacros; recipes and skills are read from /workspace/KlayoutClaw
 COPY --from=klayoutclaw install.py /opt/klayoutclaw/install.py
 COPY --from=klayoutclaw plugin /opt/klayoutclaw/plugin
 COPY --from=klayoutclaw tools /opt/klayoutclaw/tools
